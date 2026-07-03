@@ -95,7 +95,7 @@ def generate_sarif(findings: List[Dict[str, Any]], repo_root: str = ".") -> Dict
                 },
                 "results": results,
                 "properties": {
-                    "startTimeUtc": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z")
+                    "startTimeUtc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
                 }
             }
         ]

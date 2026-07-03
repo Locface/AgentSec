@@ -1,0 +1,56 @@
+site_name: AgentSec
+site_description: Static security scanner for AI agent and MCP configurations
+site_url: https://locface.github.io/AgentSec/
+repo_url: https://github.com/locface/AgentSec
+repo_name: locface/AgentSec
+edit_uri: blob/main/docs/
+
+theme:
+  name: material
+  palette:
+    primary: deep purple
+    accent: purple
+    scheme: slate
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.keys
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: installation.md
+    - Usage: usage.md
+  - Reference:
+    - Rules: rules.md
+    - OWASP Mapping: owasp.md
+  - Integrations:
+    - CI/CD: cicd.md
+  - FAQ: faq.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/locface/AgentSec
+  generator: false
+
+copyright: MIT © 2026 locface

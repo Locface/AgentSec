@@ -1,0 +1,52 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Test cache
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Type checkers / linters
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# IDE
+.vscode/
+.idea/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Scan outputs
+scan_results.json
+github_scan_results.json
+*.sarif
+
+# Temporary
+*.tmp
+*.swp
+*.bak
+
+RELEASE_AUDIT.md
+RELEASE_CHECKLIST.md
+RELEASE_NOTES_v1.0.0.md
+RELEASE_VALIDATION_REPORT.md
+CI_REVIEW.md
+mcp-servers/

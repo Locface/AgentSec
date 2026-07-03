@@ -1,0 +1,107 @@
+name: AgentSec CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test / py${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+      - name: Verify CLI starts
+        run: |
+          agentsec --help
+          agentsec scan --help
+      - name: Run tests
+        run: python -m pytest -v
+      - name: Smoke test — JSON output
+        run: |
+          agentsec scan . --include-hidden --format json | python -m json.tool > /dev/null
+      - name: Smoke test — SARIF output
+        run: |
+          agentsec scan . --include-hidden --format sarif | python -c "import sys,json; d=json.loads(sys.stdin.read()); assert d['version']=='2.1.0'; print(f'SARIF OK: {len(d[\"runs\"][0][\"results\"])} findings')"
+      - name: Smoke test — TOML parsing
+        run: |
+          mkdir -p /tmp/test-toml
+          printf '[mcpServers]\n[mcpServers.test]\ncommand = "bash"\n' > /tmp/test-toml/mcp.toml
+          agentsec scan /tmp/test-toml --format json | python -c "import sys,json; d=json.loads(sys.stdin.read()); assert len(d)>0; print(f'TOML scan OK: {len(d)} findings')"
+
+  build:
+    name: Build package
+    needs: test
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+      - name: Build sdist and wheel
+        run: python -m build
+      - name: Check package with twine
+        run: python -m twine check dist/*
+      - name: Install and test wheel
+        run: |
+          pip install dist/*.whl
+          agentsec --version
+          agentsec scan . --format json | python -m json.tool > /dev/null
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/agentsec-cli
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: Create GitHub Release
+    needs: publish
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

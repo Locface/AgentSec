@@ -23,7 +23,7 @@ def generate_sarif(findings: List[Dict[str, Any]], repo_root: str = ".") -> Dict
     }
     
     for idx, finding in enumerate(findings):
-        rule_id = finding['rule'].replace(" ", "_").lower()
+        rule_id = finding['code']
         
         if rule_id not in rules:
             desc = finding['description']

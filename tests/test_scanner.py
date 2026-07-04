@@ -79,6 +79,7 @@ def test_rule_detection_prompt_injection(rules, prompt_injection_path):
 
 def test_rule_all_patterns_require_every_pattern():
     rule = Rule(
+        code="AGENT999",
         name="Composite risk",
         severity="high",
         description="Composite risk",

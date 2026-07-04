@@ -7,8 +7,8 @@ from typing import Dict, List, Tuple
 
 
 def compute_finding_id(finding: dict) -> str:
-    """Compute a stable unique ID for a finding based on rule, file, and server."""
-    key = f"{finding['rule']}|{finding['file']}|{finding.get('server', '')}"
+    """Compute a stable unique ID for a finding based on code, file, and server."""
+    key = f"{finding['code']}|{finding['file']}|{finding.get('server', '')}"
     return hashlib.md5(key.encode()).hexdigest()
 
 

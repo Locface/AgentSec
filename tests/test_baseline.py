@@ -5,7 +5,7 @@ from pathlib import Path
 from agentsec.baseline import compute_finding_id, load_baseline, save_baseline, compare_findings
 
 def test_compute_finding_id():
-    f = {"rule": "test", "file": "/a/b", "server": "s1"}
+    f = {"code": "AGENT001", "rule": "test", "file": "/a/b", "server": "s1"}
     id1 = compute_finding_id(f)
     assert isinstance(id1, str)
     assert len(id1) == 32
@@ -16,7 +16,7 @@ def test_compute_finding_id():
     assert compute_finding_id(f3) != id1
 
 def test_save_and_load(tmp_path):
-    findings = [{"rule": "A", "file": "a.json", "severity": "high", "server": "s1"}]
+    findings = [{"code": "AGENT001", "rule": "A", "file": "a.json", "severity": "high", "server": "s1"}]
     path = tmp_path / "baseline.json"
     save_baseline(str(path), findings)
     assert path.exists()
@@ -26,10 +26,10 @@ def test_save_and_load(tmp_path):
     assert loaded == data["findings"]
 
 def test_compare():
-    f1 = {"rule": "A", "file": "a.json", "severity": "high", "server": "s1"}
-    f2 = {"rule": "B", "file": "b.json", "severity": "low", "server": "s2"}
-    f2_changed = {"rule": "B", "file": "b.json", "severity": "medium", "server": "s2"}
-    f3 = {"rule": "C", "file": "c.json", "severity": "critical", "server": "s3"}
+    f1 = {"code": "AGENT001", "rule": "A", "file": "a.json", "severity": "high", "server": "s1"}
+    f2 = {"code": "AGENT002", "rule": "B", "file": "b.json", "severity": "low", "server": "s2"}
+    f2_changed = {"code": "AGENT002", "rule": "B", "file": "b.json", "severity": "medium", "server": "s2"}
+    f3 = {"code": "AGENT003", "rule": "C", "file": "c.json", "severity": "critical", "server": "s3"}
     id1 = compute_finding_id(f1)
     id2 = compute_finding_id(f2)
     baseline = {id1: "high", id2: "low"}

@@ -83,6 +83,7 @@ class Scanner:
         finding = {
             "file": str(file_path),
             "rule": rule.name,
+            "code": rule.code,
             "severity": rule.severity,
             "description": rule.description,
             "recommendation": rule.recommendation,

@@ -6,6 +6,7 @@ from pathlib import Path
 class Rule:
     def __init__(
         self,
+        code: str,
         name: str,
         severity: str,
         description: str,
@@ -13,6 +14,7 @@ class Rule:
         detect_patterns: List[str],
         all_patterns: List[str] | None = None,
     ):
+        self.code = code
         self.name = name
         self.severity = severity
         self.description = description
@@ -35,6 +37,7 @@ def load_rules() -> List[Rule]:
     from .additional import load_additional_rules
     base_rules = [
         Rule(
+            code="AGENT001",
             name="MCP shell execution",
             severity="critical",
             description="MCP server can execute shell commands",
@@ -42,6 +45,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=["bash", "sh", "powershell", "cmd", "exec", "subprocess", "terminal", "run_command"]
         ),
         Rule(
+            code="AGENT002",
             name="MCP filesystem write access",
             severity="critical",
             description="MCP server has filesystem write access",
@@ -49,6 +53,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=["filesystem", "write", "edit", "delete", "rm", "mv", "path", "workspace"]
         ),
         Rule(
+            code="AGENT003",
             name="Secret exposure",
             severity="critical",
             description="MCP server can access secrets or environment variables",
@@ -56,6 +61,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=[".env", "process.env", "AWS_SECRET_ACCESS_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN", "SLACK_BOT_TOKEN"]
         ),
         Rule(
+            code="AGENT004",
             name="Broad path access",
             severity="high",
             description="MCP server has broad filesystem path access (root or home)",
@@ -63,6 +69,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=["/", "~", "/home", "/Users", "C:\\", ".", "..", "**"]
         ),
         Rule(
+            code="AGENT005",
             name="Prompt injection risk",
             severity="medium",
             description="Agent instruction file contains suspicious prompt injection patterns",
@@ -70,6 +77,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=["ignore previous instructions", "ignore all instructions", "do not tell the user", "secretly", "exfiltrate", "bypass", "disable security", "you are now", "system prompt", "hidden instruction"]
         ),
         Rule(
+            code="AGENT006",
             name="Sensitive file reference",
             severity="high",
             description="Agent instruction references sensitive files or secrets",
@@ -77,6 +85,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=[".env", "id_rsa", ".ssh", "credentials", "secrets", "tokens", "auth.json"]
         ),
         Rule(
+            code="AGENT007",
             name="Excessive autonomy",
             severity="medium",
             description="Agent instruction asks for excessive autonomy (no confirmation)",
@@ -84,6 +93,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=["do not ask for confirmation", "always run commands", "auto-approve", "never ask user", "full access"]
         ),
         Rule(
+            code="AGENT008",
             name="Unpinned dependency",
             severity="medium",
             description="MCP server dependency is not pinned (latest tag or no version)",
@@ -91,6 +101,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=["latest", ":latest", "@latest"]
         ),
         Rule(
+            code="AGENT009",
             name="Remote script install",
             severity="high",
             description="Agent config uses remote script install pattern (curl | bash)",
@@ -98,6 +109,7 @@ def load_rules() -> List[Rule]:
             detect_patterns=["curl ... | bash", "wget ... | sh"]
         ),
         Rule(
+            code="AGENT010",
             name="Docker socket access",
             severity="critical",
             description="MCP server can access the Docker socket",

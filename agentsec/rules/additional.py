@@ -5,6 +5,7 @@ from .base import Rule
 def load_additional_rules():
     return [
         Rule(
+            code="AGENT011",
             name="Network + filesystem access",
             severity="critical",
             description="MCP server has both network and filesystem access (exfiltration risk)",
@@ -12,6 +13,7 @@ def load_additional_rules():
             detect_patterns=["http", "https", "curl", "wget", "fetch", "filesystem", "write", "edit", "delete", "rm", "mv"]
         ),
         Rule(
+            code="AGENT012",
             name="Suspicious tool description",
             severity="high",
             description="Tool description contains suspicious instructions (prompt injection)",
@@ -19,6 +21,7 @@ def load_additional_rules():
             detect_patterns=["ignore previous instructions", "ignore all instructions", "do not tell the user", "secretly", "exfiltrate", "send to", "bypass", "disable security", "you are now", "system prompt"]
         ),
         Rule(
+            code="AGENT013",
             name="GitHub token exposure",
             severity="high",
             description="GitHub token or actions:write permission detected",
@@ -26,6 +29,7 @@ def load_additional_rules():
             detect_patterns=["GITHUB_TOKEN", "gh auth token", ".git/config", "actions: write", "contents: write"]
         ),
         Rule(
+            code="AGENT014",
             name="Communication tool write permission",
             severity="high",
             description="MCP server can send messages to Slack/email/GitHub (data leak risk)",
@@ -33,6 +37,7 @@ def load_additional_rules():
             detect_patterns=["slack", "gmail", "email", "send_message", "post_message", "create_issue", "comment", "reply"]
         ),
         Rule(
+            code="AGENT015",
             name="Database write/delete permission",
             severity="high",
             description="MCP server can modify or delete database records",
@@ -40,20 +45,7 @@ def load_additional_rules():
             detect_patterns=["postgres", "mysql", "mongodb", "redis", "delete", "drop", "update", "insert"]
         ),
         Rule(
-            name="Unpinned dependency",
-            severity="medium",
-            description="MCP server dependency not pinned to a specific version",
-            recommendation="Pin dependencies to a specific version or commit SHA to avoid supply-chain attacks.",
-            detect_patterns=["latest", ":latest", "@latest"]
-        ),
-        Rule(
-            name="Remote script install",
-            severity="high",
-            description="Remote script installation pattern (curl | bash) detected",
-            recommendation="Avoid piping remote scripts to shell; prefer verified packages or download and inspect.",
-            detect_patterns=["curl ... | bash", "wget ... | sh"]
-        ),
-        Rule(
+            code="AGENT016",
             name="Excessive autonomy instruction",
             severity="medium",
             description="Agent instruction requests excessive autonomy (no confirmation)",
@@ -61,6 +53,7 @@ def load_additional_rules():
             detect_patterns=["do not ask for confirmation", "always run commands", "auto-approve", "never ask user", "full access", "without confirmation"]
         ),
         Rule(
+            code="AGENT017",
             name="Prompt injection in markdown",
             severity="medium",
             description="Markdown file contains potential prompt injection phrases",
@@ -68,13 +61,7 @@ def load_additional_rules():
             detect_patterns=["ignore previous instructions", "as an AI agent", "system prompt", "developer message", "hidden instruction"]
         ),
         Rule(
-            name="Sensitive file reference",
-            severity="high",
-            description="Agent instruction references sensitive files or secrets",
-            recommendation="Remove references to secrets or use gitignored files for credentials.",
-            detect_patterns=[".env", "id_rsa", ".ssh", "credentials", "secrets", "tokens", "auth.json"]
-        ),
-        Rule(
+            code="AGENT018",
             name="MCP OAuth broad scopes",
             severity="medium",
             description="MCP OAuth configuration has overly broad scopes",
@@ -82,6 +69,7 @@ def load_additional_rules():
             detect_patterns=["oauth", "*", "admin", "full_access"]
         ),
         Rule(
+            code="AGENT019",
             name="Web + filesystem access",
             severity="high",
             description="Tool can browse web and write files (prompt injection to file write risk)",
@@ -89,6 +77,7 @@ def load_additional_rules():
             detect_patterns=["http", "https", "curl", "wget", "fetch", "write", "edit", "delete", "rm", "mv"]
         ),
         Rule(
+            code="AGENT020",
             name="Read repo + network",
             severity="high",
             description="Tool can read repo files and send network requests (exfiltration risk)",
@@ -96,6 +85,7 @@ def load_additional_rules():
             detect_patterns=["read_file", "read", "http", "https", "curl", "wget", "fetch"]
         ),
         Rule(
+            code="AGENT021",
             name="Unknown/untrusted source",
             severity="medium",
             description="MCP server package from unknown or untrusted source",
@@ -103,14 +93,15 @@ def load_additional_rules():
             detect_patterns=["raw.githubusercontent.com", r"raw\.", "gist", "pastebin", "dropbox", "bitbucket"]
         ),
         Rule(
+            code="AGENT022",
             name="No policy file",
             severity="low",
             description="Project uses MCP/tools but no local security policy file",
             recommendation="Define a policy file (e.g., .agentsec.yaml) to specify allow/deny lists.",
             detect_patterns=["mcpServers", "tools", "allowed", "denied"]
         ),
-        # Новые правила для популярных AI-агентов и дополнительных уязвимостей
         Rule(
+            code="AGENT023",
             name="Cursor agent config with dangerous permissions",
             severity="high",
             description="Cursor agent configuration grants dangerous permissions (shell, filesystem write, network)",
@@ -119,6 +110,7 @@ def load_additional_rules():
             all_patterns=["cursor", "shell", "write", "network"]
         ),
         Rule(
+            code="AGENT024",
             name="Claude Desktop config with MCP server risks",
             severity="high",
             description="Claude Desktop MCP server configuration has risky settings (shell, filesystem, network)",
@@ -127,6 +119,7 @@ def load_additional_rules():
             all_patterns=["mcpservers", "filesystem"]
         ),
         Rule(
+            code="AGENT025",
             name="Codex/Cline agent with unrestricted tools",
             severity="high",
             description="Codex or Cline agent has unrestricted access to tools (shell, filesystem, network)",
@@ -134,6 +127,7 @@ def load_additional_rules():
             detect_patterns=["codex", "cline", "tools", "shell", "filesystem", "network", "permissions"]
         ),
         Rule(
+            code="AGENT026",
             name="Environment variable exposure",
             severity="critical",
             description="MCP server or agent config exposes environment variables with secrets",
@@ -141,6 +135,7 @@ def load_additional_rules():
             detect_patterns=["process.env", "AWS_", "OPENAI_", "ANTHROPIC_", "GOOGLE_", "GITHUB_", "SLACK_", "DISCORD_"]
         ),
         Rule(
+            code="AGENT027",
             name="Vulnerable dependency pattern",
             severity="medium",
             description="MCP server dependency uses known vulnerable version pattern (e.g., outdated package)",
@@ -148,6 +143,7 @@ def load_additional_rules():
             detect_patterns=["@modelcontextprotocol", "^0.1", "~0.0", "<1.0", ">=0.1"]
         ),
         Rule(
+            code="AGENT028",
             name="Insecure default command",
             severity="critical",
             description="MCP server command uses insecure defaults (e.g., exec, eval, dangerous flags)",
@@ -155,6 +151,7 @@ def load_additional_rules():
             detect_patterns=["eval", "exec", "-e", "-c", "--eval", "--exec", "child_process"]
         ),
         Rule(
+            code="AGENT029",
             name="Read-only file system in MCP server",
             severity="medium",
             description="MCP server has read-only filesystem access but may still expose sensitive files",
@@ -162,6 +159,7 @@ def load_additional_rules():
             detect_patterns=["read", "readonly", "read-only", "filesystem", "path"]
         ),
         Rule(
+            code="AGENT030",
             name="Missing input validation",
             severity="medium",
             description="Agent or MCP server lacks input validation, potentially allowing injection attacks",
@@ -169,6 +167,7 @@ def load_additional_rules():
             detect_patterns=["input", "prompt", "argument", "parameter", "validate", "sanitize"]
         ),
         Rule(
+            code="AGENT031",
             name="Package manager execution",
             severity="high",
             description="Agent config invokes package managers that can execute install scripts",
@@ -176,6 +175,7 @@ def load_additional_rules():
             detect_patterns=["npx", "uvx", "pipx", "bunx", "pnpm dlx", "npm exec"]
         ),
         Rule(
+            code="AGENT032",
             name="Container privileged mode",
             severity="critical",
             description="Containerized MCP server may run with elevated host privileges",
@@ -183,6 +183,7 @@ def load_additional_rules():
             detect_patterns=["privileged: true", "--privileged", "pid: host", "network_mode: host", "--network=host"]
         ),
         Rule(
+            code="AGENT033",
             name="Host mount exposure",
             severity="critical",
             description="MCP server or container mounts sensitive host directories",
@@ -190,6 +191,7 @@ def load_additional_rules():
             detect_patterns=["/var/run/docker.sock", "/:/", "/home:/", "/root:/", "~:/", "/Users:/"]
         ),
         Rule(
+            code="AGENT034",
             name="Browser automation with local file access",
             severity="high",
             description="Agent config combines browser automation with local file access",
@@ -197,6 +199,7 @@ def load_additional_rules():
             detect_patterns=["playwright", "puppeteer", "browser", "filesystem", "file://"]
         ),
         Rule(
+            code="AGENT035",
             name="Dynamic code execution",
             severity="critical",
             description="Agent or MCP server can dynamically evaluate code",
@@ -204,6 +207,7 @@ def load_additional_rules():
             detect_patterns=["eval(", "exec(", "new Function", "child_process.exec", "python -c", "node -e"]
         ),
         Rule(
+            code="AGENT036",
             name="Wildcard tool allowlist",
             severity="high",
             description="Agent config appears to allow all tools or permissions via wildcard",
@@ -211,6 +215,7 @@ def load_additional_rules():
             detect_patterns=["allowed_tools: *", "allow_all", "allowed: [\"*\"]", "permissions: *", "tools: *"]
         ),
         Rule(
+            code="AGENT037",
             name="Telemetry or analytics endpoint",
             severity="medium",
             description="Agent or MCP server references telemetry or analytics endpoints",
@@ -218,6 +223,7 @@ def load_additional_rules():
             detect_patterns=["telemetry", "analytics", "posthog", "segment", "sentry", "datadog"]
         ),
         Rule(
+            code="AGENT038",
             name="Credential helper access",
             severity="high",
             description="Agent config references credential stores or auth helpers",

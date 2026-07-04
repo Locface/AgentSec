@@ -8,12 +8,21 @@ from .parsers.yaml_parser import parse_mcp_config as parse_yaml_mcp
 from .parsers.toml_parser import parse_mcp_config as parse_toml_mcp
 from .owasp import get_owasp_ids
 
+SEVERITY_ORDER = {"critical": 3, "high": 2, "medium": 1, "low": 0}
+
 class Scanner:
     def __init__(self, root: Path, include_hidden: bool = False, min_severity: str = "all"):
         self.root = root
         self.include_hidden = include_hidden
         self.min_severity = min_severity
         self.rules = load_rules()
+
+    def _finding_meets_severity_threshold(self, finding: Dict[str, Any]) -> bool:
+        if self.min_severity == "all":
+            return True
+        min_level = SEVERITY_ORDER.get(self.min_severity.lower(), 0)
+        finding_level = SEVERITY_ORDER.get(finding["severity"].lower(), 0)
+        return finding_level >= min_level
 
     def scan(self) -> List[Dict[str, Any]]:
         """Walk the directory, parse relevant files, and apply rules."""
@@ -57,11 +66,15 @@ class Scanner:
                     for server in mcp_data:
                         for rule in self.rules:
                             if self._apply_rule_to_mcp_server(rule, server):
-                                findings.append(self._make_finding(file_path, rule, server))
+                                finding = self._make_finding(file_path, rule, server)
+                                if self._finding_meets_severity_threshold(finding):
+                                    findings.append(finding)
             else:
                 for rule in self.rules:
                     if rule.detect(content, file_path):
-                        findings.append(self._make_finding(file_path, rule))
+                        finding = self._make_finding(file_path, rule)
+                        if self._finding_meets_severity_threshold(finding):
+                            findings.append(finding)
 
         return findings
 

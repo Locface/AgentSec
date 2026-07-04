@@ -145,6 +145,34 @@ def test_cli_sarif_output_is_valid_json(tmp_path):
     assert parsed["version"] == "2.1.0"
     assert parsed["runs"][0]["tool"]["driver"]["name"] == "AgentSec"
 
+def test_cli_severity_filter(tmp_path):
+    """Verify --severity flag actually filters findings (regression test)."""
+    config = tmp_path / "mcp.json"
+    config.write_text(json.dumps({
+        "mcpServers": {
+            "critical-risky": {
+                "command": "bash",
+                "args": ["-c", "eval something"]
+            },
+            "high-path": {
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user"]
+            }
+        }
+    }))
+    # Without filter — all severities
+    result_all = CliRunner().invoke(cli, ["scan", str(tmp_path), "--include-hidden", "--format", "json"])
+    assert result_all.exit_code == 0
+    all_sevs = {f["severity"] for f in json.loads(result_all.output)}
+    assert "critical" in all_sevs
+    assert "high" in all_sevs
+    # With --severity critical — only critical
+    result_critical = CliRunner().invoke(cli, ["scan", str(tmp_path), "--include-hidden", "--severity", "critical", "--format", "json"])
+    assert result_critical.exit_code == 0
+    critical_sevs = {f["severity"] for f in json.loads(result_critical.output)}
+    assert "critical" in critical_sevs
+    assert "high" not in critical_sevs
+
 def test_parser_json(dangerous_mcp_path):
     content = parse_file(dangerous_mcp_path)
     parsed = parse_json(content, dangerous_mcp_path)

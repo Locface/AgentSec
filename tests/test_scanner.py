@@ -174,6 +174,25 @@ def test_cli_severity_filter(tmp_path):
     assert "critical" in critical_sevs
     assert "high" not in critical_sevs
 
+def test_cli_exclude_filter(tmp_path):
+    """Verify --exclude skips files matching the pattern."""
+    # Create a mcp.json that will be scanned
+    (tmp_path / "mcp.json").write_text(json.dumps({"mcpServers": {"test": {"command": "python", "args": []}}}))
+    # Create another file that should be excluded
+    skip_dir = tmp_path / "vendor"
+    skip_dir.mkdir()
+    (skip_dir / "mcp.json").write_text(json.dumps({"mcpServers": {"bad": {"command": "bash", "args": []}}}))
+    # Without exclude — both directories scanned
+    result_all = CliRunner().invoke(cli, ["scan", str(tmp_path), "--include-hidden", "--format", "json"])
+    assert result_all.exit_code == 0
+    all_files = {f["file"] for f in json.loads(result_all.output)}
+    assert "vendor" in str(all_files)
+    # With --exclude — vendor excluded
+    result_excluded = CliRunner().invoke(cli, ["scan", str(tmp_path), "--include-hidden", "--exclude", "vendor/**", "--format", "json"])
+    assert result_excluded.exit_code == 0
+    excluded_files = {f["file"] for f in json.loads(result_excluded.output)}
+    assert not any("vendor" in f for f in excluded_files)
+
 def test_parser_json(dangerous_mcp_path):
     content = parse_file(dangerous_mcp_path)
     parsed = parse_json(content, dangerous_mcp_path)

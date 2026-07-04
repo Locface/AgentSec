@@ -1,6 +1,7 @@
 """Main scanner orchestrator."""
+import pathspec
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .rules import Rule, load_rules
 from .parsers import parse_file
 from .parsers.json_parser import parse_mcp_config as parse_json_mcp
@@ -10,11 +11,40 @@ from .owasp import get_owasp_ids
 
 SEVERITY_ORDER = {"critical": 3, "high": 2, "medium": 1, "low": 0}
 
+
+def _load_gitignore_spec(root: Path, extra_patterns: List[str], no_gitignore: bool) -> Optional[pathspec.PathSpec]:
+    """Load .gitignore patterns from root + extra patterns.
+
+    Returns a pathspec.PathSpec with merged patterns, or None if no patterns.
+    """
+    patterns: List[str] = []
+    if not no_gitignore:
+        gitignore_path = root / ".gitignore"
+        if gitignore_path.exists():
+            lines = gitignore_path.read_text().splitlines()
+            for line in lines:
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#"):
+                    patterns.append(stripped)
+    for ep in extra_patterns:
+        patterns.append(ep)
+
+    if not patterns:
+        return None
+    return pathspec.PathSpec.from_lines(
+        "gitignore", patterns
+    )
+
+
 class Scanner:
-    def __init__(self, root: Path, include_hidden: bool = False, min_severity: str = "all"):
+    def __init__(self, root: Path, include_hidden: bool = False, min_severity: str = "all",
+                 exclude_patterns: Optional[List[str]] = None, no_gitignore: bool = False):
         self.root = root
         self.include_hidden = include_hidden
         self.min_severity = min_severity
+        self.exclude_patterns = exclude_patterns or []
+        self.no_gitignore = no_gitignore
+        self._ignore_spec = _load_gitignore_spec(root, self.exclude_patterns, no_gitignore)
         self.rules = load_rules()
 
     def _finding_meets_severity_threshold(self, finding: Dict[str, Any]) -> bool:
@@ -46,7 +76,16 @@ class Scanner:
                 continue
             if not self.include_hidden and file_path.name.startswith(".") and file_path.name not in [".env", ".env.example"]:
                 continue
-            
+
+            # Check .gitignore and --exclude patterns
+            if self._ignore_spec is not None:
+                try:
+                    rel = file_path.relative_to(self.root).as_posix()
+                    if self._ignore_spec.match_file(rel):
+                        continue
+                except ValueError:
+                    pass  # file outside root — should not happen, but be safe
+
             if not any(p in str(file_path) for p in target_patterns):
                 continue
 

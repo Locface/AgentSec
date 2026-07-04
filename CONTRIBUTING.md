@@ -139,6 +139,56 @@ Use hyphens to separate words. Keep names short but descriptive.
 - [ ] Commits follow conventional commit format
 - [ ] Branch is up-to-date with `main`
 
+## Versioning & Releases
+
+AgentSec uses [`setuptools-scm`](https://setuptools-scm.readthedocs.io/) to
+derive its version automatically from Git tags. **The Git tag is the single
+source of truth for the version — there is no version string to edit
+anywhere in the codebase.**
+
+### Hard rule: never edit a version number manually
+
+- `pyproject.toml` declares `dynamic = ["version"]` and must **never**
+  contain a hardcoded `[project].version` field.
+- `agentsec/__init__.py`, `agentsec/sarif.py`, and every other file that
+  reports a version must obtain it dynamically (via the generated
+  `agentsec/_version.py` or `importlib.metadata`) — never hardcode a
+  version string.
+- If any file reintroduces a manually maintained version, the release
+  pipeline is broken by design: that value will inevitably drift out of
+  sync with the actual Git tag. CI enforces this automatically (see below).
+
+On a tagged commit (e.g. `v1.2.3`), the package version is exactly `1.2.3`.
+On an untagged commit, the version is a PEP 440 development version derived
+from the most recent tag plus commit distance and hash, e.g.
+`1.2.4.dev5+gabcdef1`. There is no other channel for communicating version
+intent — if you need a new version, you push a new tag.
+
+### How to cut a release
+
+A maintainer only needs to:
+
+```bash
+git commit
+git tag vX.Y.Z
+git push origin main --tags
+```
+
+Pushing the tag triggers `.github/workflows/agentsec.yml`, which
+automatically:
+
+1. Runs the full test matrix (Python 3.10–3.13).
+2. Derives the version from the pushed tag via `setuptools-scm`.
+3. Builds the sdist and wheel.
+4. Validates the package (`twine check`, filename-vs-tag check, install +
+   smoke test of the built wheel).
+5. Publishes to PyPI via Trusted Publishing (OIDC — no stored tokens).
+6. Creates the GitHub Release with auto-generated release notes.
+
+No manual version editing, no manual PyPI upload, no separate release-notes
+step. The only file a maintainer must keep current by hand is
+`CHANGELOG.md`.
+
 ## Reporting Issues
 
 ### Bug Reports

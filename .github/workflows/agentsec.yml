@@ -19,7 +19,12 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
       fail-fast: false
     steps:
+      # fetch-depth: 0 is required so setuptools-scm can see the full tag
+      # history and derive the correct version. Do not remove this, and
+      # apply the same setting to any future job that installs the package.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
@@ -28,10 +33,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
+      - name: Guard against manual versioning regressions
+        run: python scripts/check_version_policy.py
       - name: Verify CLI starts
         run: |
           agentsec --help
           agentsec scan --help
+      - name: Verify version is Git-derived
+        run: |
+          agentsec --version
       - name: Run tests
         run: python -m pytest -v
       - name: Smoke test — JSON output
@@ -53,6 +63,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -65,6 +77,13 @@ jobs:
         run: python -m build
       - name: Check package with twine
         run: python -m twine check dist/*
+      - name: Verify wheel/sdist filenames match the Git tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "Expected version from tag: $TAG_VERSION"
+          ls dist/
+          test -f "dist/agentsec_cli-${TAG_VERSION}-py3-none-any.whl"
+          test -f "dist/agentsec_cli-${TAG_VERSION}.tar.gz"
       - name: Install and test wheel
         run: |
           pip install dist/*.whl

@@ -7,6 +7,9 @@ env/
 __pycache__/
 *.py[cod]
 
+# setuptools-scm generated version file (derived from Git tags at build time)
+agentsec/_version.py
+
 # Build artifacts
 build/
 dist/
@@ -50,3 +53,13 @@ RELEASE_NOTES_v1.0.0.md
 RELEASE_VALIDATION_REPORT.md
 CI_REVIEW.md
 mcp-servers/
+
+# Internal strategy / one-time audit artifacts — content lives in Second Brain
+# (secondbrain/raw/2026-07-04_agentsec_*.md), synthesized into wiki notes.
+# Not public-repo content; kept out of git if they reappear locally.
+VISION.md
+ROADMAP_V2.md
+NEXT_HIGH_VALUE_TASKS.md
+RESEARCH_GITHUB.md
+RELEASE_AUDIT_vNEXT.md
+RELEASE_INFRASTRUCTURE_REVIEW.md

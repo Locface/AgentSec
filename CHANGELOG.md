@@ -5,6 +5,27 @@ All notable changes to AgentSec will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Migrated versioning from manually-edited version strings to
+  [`setuptools-scm`](https://setuptools-scm.readthedocs.io/). The Git tag is
+  now the single source of truth: `pyproject.toml` no longer hardcodes a
+  `version`, `agentsec/__init__.py` no longer hardcodes `__version__`, and
+  `agentsec/sarif.py` no longer hardcodes the SARIF `tool.driver.version`.
+  All three now derive from the current Git tag at build/install time via
+  `agentsec/_version.py` (generated, gitignored).
+- `agentsec --version` and the SARIF output's `tool.driver.version` now
+  report the Git-derived version (exact tag on a tagged commit, e.g. `1.0.4`;
+  a PEP 440 dev version like `1.0.4.dev5+gabcdef1` on untagged commits).
+- Release process is now exactly: `git tag vX.Y.Z && git push origin main --tags`.
+  No file edits are required to cut a release — CI builds, validates,
+  publishes to PyPI, and creates the GitHub Release automatically from the tag.
+- `.github/workflows/agentsec.yml`: `actions/checkout` now uses
+  `fetch-depth: 0` in the `test` and `build` jobs so `setuptools-scm` can see
+  the full tag history; added a step verifying the built wheel/sdist
+  filenames match the pushed tag exactly.
+
 ## [1.0.3] - 2026-07-03
 
 ### Fixed

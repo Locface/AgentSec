@@ -8,6 +8,8 @@ import datetime
 from typing import List, Dict, Any
 from pathlib import Path
 
+from . import __version__
+
 
 def generate_sarif(findings: List[Dict[str, Any]], repo_root: str = ".") -> Dict[str, Any]:
     """Convert AgentSec findings to SARIF format."""
@@ -90,7 +92,7 @@ def generate_sarif(findings: List[Dict[str, Any]], repo_root: str = ".") -> Dict
                         "organization": "AgentSec",
                         "informationUri": "https://github.com/locface/AgentSec",
                         "rules": list(rules.values()),
-                        "version": "1.0.3"
+                        "version": __version__
                     }
                 },
                 "results": results,

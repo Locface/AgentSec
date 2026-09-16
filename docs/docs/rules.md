@@ -1,6 +1,6 @@
 # Security Rules Reference
 
-AgentSec ships with **45 security rules (AGENT001–AGENT045)** covering the full spectrum of AI agent risks, MCP configuration vulnerabilities, and autonomous execution hazards.
+AgentSec ships with **50 security rules (AGENT001–AGENT045)** covering the full spectrum of AI agent risks, MCP configuration vulnerabilities, and autonomous execution hazards.
 
 All rules map to the **OWASP Top 10 for LLM Applications (2025)** (LLM01–LLM10) and the **OWASP Agentic Security Top 10 (2026)** (AG01–AG10).
 
@@ -66,6 +66,16 @@ All rules map to the **OWASP Top 10 for LLM Applications (2025)** (LLM01–LLM10
 | **AGENT043** | SSRF via agent network tools | Critical | Instructions, MCP | LLM04, AG02 | Network tool configured to reach cloud metadata (`169.254.169.254`) |
 | **AGENT044** | Runtime instruction hijacking | High | Instructions | LLM01, AG08 | Directives instruct agent to load instructions from dynamic URLs |
 | **AGENT045** | Unsupervised destructive action | High | Instructions, MCP | LLM08, AG02 | Destructive file or database operations without Human-in-the-Loop review |
+| **AGENT046** | Arbitrary code execution in tool handler | Critical | Python Tool | LLM06, AG02 | Agent tool or skill code invokes `eval()`, `exec()`, or `__import__()` |
+| **AGENT047** | Unsanitized shell invocation in tool code | Critical | Python Tool | LLM06, AG02 | Tool implementation invokes shell commands via `subprocess(shell=True)` or `os.system()` |
+| **AGENT048** | Insecure deserialization in tool handler | High | Python Tool | LLM08, AG07 | Tool uses unsafe deserialization (`pickle.loads`, `yaml.load` without SafeLoader) |
+| **AGENT049** | Hardcoded cloud metadata SSRF in agent tool | Critical | Python Tool | LLM04, AG05 | Agent tool code directly references cloud IMDS (`169.254.169.254`) |
+| **AGENT050** | Tool shadowing & naming collision | High | MCP | AG03, AG08 | Multiple MCP servers define colliding tool names, creating a tool hijacking hazard |
+| **AGENT046** | Arbitrary code execution in tool handler | Critical | Python Tool | LLM06, AG02 | Agent tool or skill code invokes , , or  |
+| **AGENT047** | Unsanitized shell invocation in tool code | Critical | Python Tool | LLM06, AG02 | Tool implementation invokes shell commands via  or  |
+| **AGENT048** | Insecure deserialization in tool handler | High | Python Tool | LLM08, AG07 | Tool uses unsafe deserialization (,  without SafeLoader) |
+| **AGENT049** | Hardcoded cloud metadata SSRF in agent tool | Critical | Python Tool | LLM04, AG05 | Agent tool code directly references cloud IMDS () |
+| **AGENT050** | Tool shadowing & naming collision | High | MCP | AG03, AG08 | Multiple MCP servers define colliding tool names, creating a tool hijacking hazard |
 
 ---
 

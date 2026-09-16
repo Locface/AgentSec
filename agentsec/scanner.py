@@ -9,6 +9,8 @@ from .parsers import parse_file
 from .parsers.json_parser import parse_mcp_config as parse_json_mcp
 from .parsers.yaml_parser import parse_mcp_config as parse_yaml_mcp
 from .parsers.toml_parser import parse_mcp_config as parse_toml_mcp
+from .parsers.python_ast import scan_python_tool_ast
+from .shadowing import detect_tool_shadowing
 from .owasp import get_owasp_ids
 from .ignore import SuppressionManager
 from .capabilities import CapabilityProfile
@@ -54,6 +56,14 @@ def classify_file(file_path: Path) -> Optional[str]:
     if name in {"package.json", "requirements.txt", "pipfile"}:
         return "dependency"
 
+    if name.endswith(".py"):
+        # Avoid self-scanning scanner's own internal engine or test fixtures
+        if "/agentsec/" in path_str or path_str.startswith("agentsec/"):
+            return None
+        if "/tests/" in path_str or path_str.startswith("tests/"):
+            return None
+        return "python_tool"
+
     return None
 
 
@@ -98,6 +108,7 @@ class Scanner:
     def scan(self) -> List[Dict[str, Any]]:
         findings = []
         cap_profile = CapabilityProfile()
+        all_mcp_servers: List[Dict[str, Any]] = []
 
         for file_path in self.root.rglob("*"):
             if not file_path.is_file():
@@ -149,6 +160,8 @@ class Scanner:
 
                 if mcp_data:
                     for server in mcp_data:
+                        server["file"] = str(file_path)
+                        all_mcp_servers.append(server)
                         cap_profile.add_mcp_server(server)
                         for rule in self.rules:
                             if not rule.applies_to("mcp"):
@@ -158,6 +171,27 @@ class Scanner:
                                 if self._finding_meets_severity_threshold(finding):
                                     if not self.suppression.is_ignored(finding, rel_path, content):
                                         findings.append(finding)
+
+            elif file_type == "python_tool":
+                # 1. AST analysis for Python tools
+                ast_findings = scan_python_tool_ast(file_path, content)
+                for af in ast_findings:
+                    af["owasp"] = get_owasp_ids(af["rule"])
+                    if self._finding_meets_severity_threshold(af):
+                        if not self.suppression.is_ignored(af, rel_path, content):
+                            findings.append(af)
+
+                # 2. General pattern rules for python_tool (skip what AST already flagged)
+                for rule in self.rules:
+                    if not rule.applies_to("python_tool"):
+                        continue
+                    if any(af["code"] == rule.code for af in ast_findings):
+                        continue
+                    if rule.detect(content, file_path, file_type="python_tool"):
+                        finding = self._make_finding(file_path, rule)
+                        if self._finding_meets_severity_threshold(finding):
+                            if not self.suppression.is_ignored(finding, rel_path, content):
+                                findings.append(finding)
             else:
                 for rule in self.rules:
                     if not rule.applies_to(file_type):
@@ -174,6 +208,15 @@ class Scanner:
             if self._finding_meets_severity_threshold(cf):
                 if not self.suppression.is_ignored(cf, cf["file"]):
                     findings.append(cf)
+
+        # Tool Shadowing detection across all configured MCP servers
+        if all_mcp_servers:
+            shadow_findings = detect_tool_shadowing(all_mcp_servers)
+            for sf in shadow_findings:
+                sf["owasp"] = get_owasp_ids(sf["rule"])
+                if self._finding_meets_severity_threshold(sf):
+                    if not self.suppression.is_ignored(sf, sf["file"]):
+                        findings.append(sf)
 
         return findings
 

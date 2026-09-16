@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-17
+
+### Added
+- **Python AST Security Engine (`agentsec.parsers.python_ast`)**:
+  - `AGENT046`: Arbitrary code execution in tool handler (`eval`, `exec`, `__import__`).
+  - `AGENT047`: Unsanitized shell invocation in tool code (`subprocess(shell=True)`, `os.system`).
+  - `AGENT048`: Insecure deserialization in tool handler (`pickle.loads`, unsafe YAML).
+  - `AGENT049`: Hardcoded cloud metadata SSRF in agent tools (`169.254.169.254`, GCP/AWS IMDS).
+- **Tool Shadowing & Naming Collision Detector (`agentsec.shadowing`)**:
+  - `AGENT050`: Flags tool collisions across multiple MCP servers that enable tool hijacking.
+- **CLI Enhancements**:
+  - Added `--fail-on-score <int>` to gate CI/CD pipelines on minimum security scores (0–100).
+  - Enhanced `--format markdown` with GitHub PR-ready status tables and remediation guides.
+- Expanded security rule database to 50 rules (AGENT001–AGENT050).
+- Added test suites for AST analyzer, tool shadowing, and score gating (58 total tests, 100% pass).
+
 ## [1.1.0] - 2026-09-16
 
 ### Added

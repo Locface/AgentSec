@@ -192,23 +192,101 @@ RULE_OWASP_MAP = {
         ("LLM08", "Excessive Permissions"),
         ("AG02", "Unauthorized Tool Access"),
     ],
+    # === AST & Shadowing rules (AGENT046–AGENT050) ===
+    "Arbitrary code execution in tool handler": [
+        ("LLM06", "Excessive Agency"),
+        ("AG02", "Unauthorized Tool Access"),
+    ],
+    "Unsanitized shell invocation in tool code": [
+        ("LLM06", "Excessive Agency"),
+        ("AG02", "Unauthorized Tool Access"),
+    ],
+    "Insecure deserialization in tool handler": [
+        ("LLM08", "Excessive Permissions"),
+        ("AG07", "Output Validation Failure"),
+    ],
+    "Hardcoded cloud metadata SSRF in agent tool": [
+        ("LLM04", "Data Leakage via External Services"),
+        ("AG05", "Memory/Prompt Leakage"),
+    ],
+    "Tool shadowing & naming collision": [
+        ("AG03", "Agent Impersonation"),
+        ("AG08", "Agent Workflow Manipulation"),
+    ],
+}
+
+RULE_CODE_MAP = {
+    "AGENT001": "MCP shell execution",
+    "AGENT002": "MCP filesystem write access",
+    "AGENT003": "Secret exposure",
+    "AGENT004": "Broad path access",
+    "AGENT005": "Prompt injection risk",
+    "AGENT006": "Sensitive file reference",
+    "AGENT007": "Excessive autonomy",
+    "AGENT008": "Unpinned dependency",
+    "AGENT009": "Remote script install",
+    "AGENT010": "Docker socket access",
+    "AGENT011": "Network + filesystem access",
+    "AGENT012": "Suspicious tool description",
+    "AGENT013": "GitHub token exposure",
+    "AGENT014": "Communication tool write permission",
+    "AGENT015": "Database write/delete permission",
+    "AGENT016": "Excessive autonomy instruction",
+    "AGENT017": "Prompt injection in markdown",
+    "AGENT018": "MCP OAuth broad scopes",
+    "AGENT019": "Web + filesystem access",
+    "AGENT020": "Read repo + network",
+    "AGENT021": "Unknown/untrusted source",
+    "AGENT022": "No policy file",
+    "AGENT023": "Cursor agent config with dangerous permissions",
+    "AGENT024": "Claude Desktop config with MCP server risks",
+    "AGENT025": "Codex/Cline agent with unrestricted tools",
+    "AGENT026": "Environment variable exposure",
+    "AGENT027": "Vulnerable dependency pattern",
+    "AGENT028": "Insecure default command",
+    "AGENT029": "Read-only file system in MCP server",
+    "AGENT030": "Missing input validation",
+    "AGENT031": "Package manager execution",
+    "AGENT032": "Container privileged mode",
+    "AGENT033": "Host mount exposure",
+    "AGENT034": "Browser automation with local file access",
+    "AGENT035": "Dynamic code execution",
+    "AGENT036": "Wildcard tool allowlist",
+    "AGENT037": "Telemetry or analytics endpoint",
+    "AGENT038": "Credential helper access",
+    "AGENT039": "Insecure remote MCP transport",
+    "AGENT040": "Unbounded resource execution",
+    "AGENT041": "Unsanitized agent hook execution",
+    "AGENT042": "Prompt and secret leakage in telemetry",
+    "AGENT043": "SSRF vulnerability via agent network tools",
+    "AGENT044": "Runtime instruction hijacking risk",
+    "AGENT045": "Unsupervised destructive action",
+    "AGENT046": "Arbitrary code execution in tool handler",
+    "AGENT047": "Unsanitized shell invocation in tool code",
+    "AGENT048": "Insecure deserialization in tool handler",
+    "AGENT049": "Hardcoded cloud metadata SSRF in agent tool",
+    "AGENT050": "Tool shadowing & naming collision",
 }
 
 
-def get_owasp(rule_name: str) -> list:
-    """Return OWASP mappings for a rule name. Returns [(owasp_id, category_name), ...] or empty list."""
-    return RULE_OWASP_MAP.get(rule_name, [])
+def get_owasp(key: str) -> list:
+    """Return OWASP mappings for a rule name or rule code. Returns [(owasp_id, category_name), ...] or empty list."""
+    if key in RULE_OWASP_MAP:
+        return RULE_OWASP_MAP[key]
+    if key in RULE_CODE_MAP:
+        return RULE_OWASP_MAP.get(RULE_CODE_MAP[key], [])
+    return []
 
 
-def get_owasp_ids(rule_name: str) -> str:
+def get_owasp_ids(key: str) -> str:
     """Return OWASP IDs as a comma-separated string (e.g. 'LLM06, AG02')."""
-    mappings = get_owasp(rule_name)
+    mappings = get_owasp(key)
     return ", ".join(owasp_id for owasp_id, _ in mappings)
 
 
-def format_owasp(rule_name: str) -> str:
+def format_owasp(key: str) -> str:
     """Format OWASP info for terminal output: '[LLM06, AG02]' or empty string."""
-    mappings = get_owasp(rule_name)
+    mappings = get_owasp(key)
     if not mappings:
         return ""
     ids = ", ".join(f"{owasp_id}" for owasp_id, _ in mappings)

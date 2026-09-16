@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 from .json_parser import _infer_capabilities
 
 def parse_mcp_config(content: str, file_path: Path) -> Optional[List[Dict[str, Any]]]:
-    """Parse MCP config from TOML content."""
     try:
         data = tomllib.loads(content)
     except (TOMLDecodeError, TypeError):
@@ -22,6 +21,7 @@ def parse_mcp_config(content: str, file_path: Path) -> Optional[List[Dict[str, A
                     "command": config.get("command", ""),
                     "args": config.get("args", []),
                     "env": config.get("env", {}),
+                    "tools": config.get("tools", []),
                     "capabilities": _infer_capabilities(config)
                 }
                 servers.append(server)

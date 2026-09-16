@@ -20,8 +20,12 @@ All findings map directly to the **OWASP Top 10 for LLM Applications (2025)** (L
 
 ## Key Features
 
-- **45 Security Rules (AGENT001–AGENT045)** covering shell execution, filesystem access, SSRF, exfiltration, OAuth scopes, prompt injection, container escape, token bombing, and credential exposure.
+- **50 Security Rules (AGENT001–AGENT050)** covering shell execution, filesystem access, SSRF, exfiltration, OAuth scopes, prompt injection, container escape, token bombing, and credential exposure.
 - **Contextual Rule Scoping:** Targets rules specifically to file types (`mcp`, `agent_instructions`, `container`, `env`, `dependency`) to eliminate false positives.
+- **Python AST Security Engine:** Deep static AST analysis of agent tool implementations and skill scripts (), catching , , , and metadata SSRF with line-number precision.
+- **Tool Shadowing & Collision Detection:** Detects naming conflicts and tool shadowing across MCP servers that allow untrusted servers to hijack agent tool calls.
+- **Python AST Security Engine:** Deep static AST analysis of agent tool implementations and skill scripts (`.py`), catching `eval()`, `subprocess(shell=True)`, `pickle`, and metadata SSRF with line-number precision.
+- **Tool Shadowing & Collision Detection:** Detects naming conflicts and tool shadowing across MCP servers that allow untrusted servers to hijack agent tool calls.
 - **Cross-file Permission Aggregation:** Detects high-risk composite configurations (e.g. MCP filesystem write or shell execution combined with Cursor/Claude "auto-approve" directives).
 - **Security Score & Grade (0–100 / A–F):** Instant deterministic security posture metric for PRs and security reports.
 - **Granular Suppression System:** Complete support for `.agentsecignore` (global and path-scoped rules) and inline comments (`# agentsec:ignore AGENT001`).

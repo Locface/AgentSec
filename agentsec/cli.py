@@ -20,6 +20,8 @@ def cli():
 @click.option("--severity", default="all", help="Minimum severity: critical, high, medium, low, all")
 @click.option("--fail-on", type=click.Choice(["critical", "high", "medium", "low"], case_sensitive=False),
               help="Exit with code 1 if any finding is at least this severity")
+@click.option("--fail-on-score", type=int, default=None,
+              help="Exit with code 1 if Security Score is below this threshold (0-100)")
 @click.option("--include-hidden", is_flag=True, help="Include hidden files and directories")
 @click.option("--exclude", multiple=True, default=None,
               help="Exclude paths matching pattern (can be repeated). E.g., --exclude 'node_modules/**'")
@@ -33,7 +35,7 @@ def cli():
               help="Save current findings as baseline JSON file and exit.")
 @click.option("--show-owasp", is_flag=True, default=False,
               help="Show OWASP Top 10 for LLM mapping IDs for each finding")
-def scan(path, format, severity, include_hidden, exclude, no_gitignore, ignore_file=None, fail_on=None, baseline=None, update_baseline=None, show_owasp=False):
+def scan(path, format, severity, include_hidden, exclude, no_gitignore, ignore_file=None, fail_on=None, fail_on_score=None, baseline=None, update_baseline=None, show_owasp=False):
     """Scan a directory for security risks in AI agent configurations."""
     from .scanner import Scanner
     from .report import print_summary
@@ -95,6 +97,13 @@ def scan(path, format, severity, include_hidden, exclude, no_gitignore, ignore_f
                 if severity_levels.get(f["severity"].lower(), -1) >= min_fail:
                     click.echo(f"Failing due to {f['severity']} finding: {f['rule']}")
                     sys.exit(1)
+
+    if fail_on_score is not None:
+        from .score import calculate_security_score
+        metrics = calculate_security_score(findings)
+        if metrics["score"] < fail_on_score:
+            click.echo(f"Failing: Security Score {metrics['score']}/100 is below threshold of {fail_on_score}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":

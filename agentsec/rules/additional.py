@@ -1,4 +1,4 @@
-"""Additional security rules for AgentSec (AGENT011–AGENT045)."""
+"""Additional security rules for AgentSec (AGENT011–AGENT050)."""
 
 from .base import Rule
 
@@ -323,5 +323,50 @@ def load_additional_rules():
             recommendation="Enforce Human-in-the-Loop (HITL) approval gates for all destructive operations.",
             detect_patterns=["delete without asking", "drop table without confirm", "force delete auto", "auto_confirm_destructive"],
             target_types=["agent_instructions", "mcp"],
+        ),
+            Rule(
+            code="AGENT046",
+            name="Arbitrary code execution in tool handler",
+            severity="critical",
+            description="Agent tool or hook contains eval(), exec(), or dynamic code compilation",
+            recommendation="Remove dynamic code execution; use predefined parameters or safe dispatching.",
+            detect_patterns=["eval(", "exec(", "__import__("],
+            target_types=["python_tool"],
+        ),
+        Rule(
+            code="AGENT047",
+            name="Unsanitized shell invocation in tool code",
+            severity="critical",
+            description="Tool implementation invokes shell commands via subprocess(shell=True) or os.system()",
+            recommendation="Avoid shell=True; pass explicit argument lists without shell interpolation, or remove shell access.",
+            detect_patterns=["shell=True", "shell=true", "os.system(", "os.popen("],
+            target_types=["python_tool"],
+        ),
+        Rule(
+            code="AGENT048",
+            name="Insecure deserialization in tool handler",
+            severity="high",
+            description="Tool implementation uses unsafe deserialization (pickle, unsafe yaml) on agent inputs or tool states",
+            recommendation="Use safe data serialization formats like json or yaml.safe_load.",
+            detect_patterns=["pickle.loads", "pickle.load", "yaml.load("],
+            target_types=["python_tool"],
+        ),
+        Rule(
+            code="AGENT049",
+            name="Hardcoded cloud metadata SSRF in agent tool",
+            severity="critical",
+            description="Agent tool contains references to link-local cloud metadata endpoints (169.254.169.254)",
+            recommendation="Enforce network egress firewalls; block requests to 169.254.169.254 and instance metadata.",
+            detect_patterns=["169.254.169.254", "metadata.google.internal", "fd00:ec2::254"],
+            target_types=["python_tool"],
+        ),
+        Rule(
+            code="AGENT050",
+            name="Tool shadowing & naming collision",
+            severity="high",
+            description="Multiple MCP servers register conflicting tool names, creating a tool shadowing hazard",
+            recommendation="Assign unique prefixes to MCP tool names or namespace tools per server to prevent shadowing.",
+            detect_patterns=["tool_shadowing", "tool_collision"],
+            target_types=["mcp"],
         ),
     ]

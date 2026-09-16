@@ -140,7 +140,7 @@ def load_additional_rules():
             severity="high",
             description="Codex or Cline agent has unrestricted access to tools (shell, filesystem, network)",
             recommendation="Restrict tool access for Codex/Cline agents; use permission prompts.",
-            detect_patterns=["codex", "cline", "tools", "shell", "filesystem", "network", "permissions"],
+            detect_patterns=["codex: unrestricted", "cline: unrestricted", "cline unrestricted", "codex unrestricted", "cline auto-approve", "codex auto-approve", "cline permissions: all", "codex permissions: all"],
             target_types=["agent_instructions"],
         ),
         Rule(
@@ -185,7 +185,7 @@ def load_additional_rules():
             severity="medium",
             description="Agent or MCP server lacks input validation, potentially allowing injection attacks",
             recommendation="Validate and sanitize all inputs from the agent or external sources.",
-            detect_patterns=["input", "prompt", "argument", "parameter", "validate", "sanitize"],
+            detect_patterns=["skip_validation", "no_validation", "unvalidated_input", "disable_sanitization", "raw_prompt", "trust_all_inputs"],
             target_types=["mcp", "agent_instructions"],
         ),
         Rule(
@@ -221,7 +221,7 @@ def load_additional_rules():
             severity="high",
             description="Agent config combines browser automation with local file access",
             recommendation="Isolate browser automation from sensitive filesystem paths.",
-            detect_patterns=["playwright", "puppeteer", "browser", "filesystem", "file://"],
+            detect_patterns=["file://", "playwright file://", "puppeteer file://", "allow-file-access-from-files", "playwright: filesystem", "puppeteer: filesystem"],
             target_types=["mcp", "agent_instructions"],
         ),
         Rule(

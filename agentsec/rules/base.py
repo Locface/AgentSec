@@ -98,7 +98,7 @@ def load_rules() -> List[Rule]:
             severity="high",
             description="Agent instruction references sensitive files or secrets",
             recommendation="Remove references to secrets or use gitignored files.",
-            detect_patterns=[".env", "id_rsa", ".ssh", "credentials", "secrets", "tokens", "auth.json"],
+            detect_patterns=[".env", "id_rsa", "id_ed25519", ".ssh/", "credentials.json", "secrets.json", "auth.json"],
             target_types=["agent_instructions", "mcp"],
         ),
         Rule(

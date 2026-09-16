@@ -1,9 +1,11 @@
 """Output formatters for AgentSec findings."""
 
 from .score import calculate_security_score
+from .fixes import get_fix_plan
+from .html_report import generate_html_report
 
 
-def print_summary(findings: list, format: str, show_owasp: bool = False) -> None:
+def print_summary(findings: list, format: str, show_owasp: bool = False, suggest_fixes: bool = False, scanned_path: str = ".") -> None:
     """Print findings in the requested format."""
     metrics = calculate_security_score(findings)
 
@@ -19,6 +21,10 @@ def print_summary(findings: list, format: str, show_owasp: bool = False) -> None
             print(f"  Recommendation: {f['recommendation']}")
             if show_owasp and f.get('owasp'):
                 print(f"  OWASP: {f['owasp']}")
+            if suggest_fixes:
+                fix = get_fix_plan(f)
+                print(f"  Fix: {fix['action']}")
+                print(f"  Suppression (.agentsecignore): {fix['suppression']}")
             print()
 
         c = metrics["counts"]
@@ -27,7 +33,15 @@ def print_summary(findings: list, format: str, show_owasp: bool = False) -> None
 
     elif format == "json":
         import json
-        print(json.dumps(findings, indent=2))
+        if suggest_fixes:
+            enriched = []
+            for f in findings:
+                item = dict(f)
+                item["fix_plan"] = get_fix_plan(f)
+                enriched.append(item)
+            print(json.dumps(enriched, indent=2))
+        else:
+            print(json.dumps(findings, indent=2))
 
     elif format == "markdown":
         c = metrics["counts"]
@@ -52,18 +66,25 @@ def print_summary(findings: list, format: str, show_owasp: bool = False) -> None
                 print(f"| **{f['severity'].upper()}** | {f['rule']} | {code_str} | {file_str} | {owasp_str} |")
             print()
 
-            print("### Detailed Remediation\n")
+            print("### Detailed Remediation & Fix Plans\n")
             for f in findings:
                 line_info = f" (line {f['line']})" if f.get("line") else ""
+                fix = get_fix_plan(f)
                 print(f"#### [{f['severity'].upper()}] {f['rule']}{line_info}")
                 print(f"- **File:** `{f['file']}`")
                 if f.get("server"):
                     print(f"- **Server:** `{f['server']}`")
                 if f.get("owasp"):
-                    print(f"- **OWASP:** {f['owasp']}")
+                    print(f"- **OWASP:** `{f['owasp']}`")
                 print(f"- **Description:** {f['description']}")
                 print(f"- **Recommendation:** {f['recommendation']}")
+                print(f"- **Suggested Fix:** {fix['action']}")
+                print(f"```\n{fix['patch']}\n```")
+                print(f"- **Suppression Syntax:** `{fix['suppression']}`")
                 print()
+
+    elif format == "html":
+        print(generate_html_report(findings, scanned_path=scanned_path))
 
     elif format == "sarif":
         from .sarif import print_sarif

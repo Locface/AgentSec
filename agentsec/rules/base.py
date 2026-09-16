@@ -1,7 +1,8 @@
 """Base rule definitions."""
 
-from typing import List
+from typing import List, Optional
 from pathlib import Path
+
 
 class Rule:
     def __init__(
@@ -13,6 +14,7 @@ class Rule:
         recommendation: str,
         detect_patterns: List[str],
         all_patterns: List[str] | None = None,
+        target_types: List[str] | None = None,
     ):
         self.code = code
         self.name = name
@@ -21,9 +23,17 @@ class Rule:
         self.recommendation = recommendation
         self.patterns = detect_patterns
         self.all_patterns = all_patterns or []
+        self.target_types = target_types
 
-    def detect(self, content: str, file_path: Path) -> bool:
+    def applies_to(self, file_type: Optional[str]) -> bool:
+        if not self.target_types or not file_type:
+            return True
+        return file_type in self.target_types or "all" in self.target_types
+
+    def detect(self, content: str, file_path: Path, file_type: Optional[str] = None) -> bool:
         if not content:
+            return False
+        if file_type and not self.applies_to(file_type):
             return False
         lower = content.lower()
         if self.all_patterns:
@@ -32,6 +42,7 @@ class Rule:
             if pattern.lower() in lower:
                 return True
         return False
+
 
 def load_rules() -> List[Rule]:
     from .additional import load_additional_rules
@@ -42,7 +53,8 @@ def load_rules() -> List[Rule]:
             severity="critical",
             description="MCP server can execute shell commands",
             recommendation="Require explicit approval or remove shell access.",
-            detect_patterns=["bash", "sh", "powershell", "cmd", "exec", "subprocess", "terminal", "run_command"]
+            detect_patterns=["bash", "sh", "powershell", "cmd", "exec", "subprocess", "terminal", "run_command"],
+            target_types=["mcp"],
         ),
         Rule(
             code="AGENT002",
@@ -50,7 +62,8 @@ def load_rules() -> List[Rule]:
             severity="critical",
             description="MCP server has filesystem write access",
             recommendation="Restrict filesystem access to read-only or specific directories.",
-            detect_patterns=["filesystem", "write", "edit", "delete", "rm", "mv", "path", "workspace"]
+            detect_patterns=["filesystem", "write", "edit", "delete", "rm", "mv", "path", "workspace"],
+            target_types=["mcp"],
         ),
         Rule(
             code="AGENT003",
@@ -58,7 +71,8 @@ def load_rules() -> List[Rule]:
             severity="critical",
             description="MCP server can access secrets or environment variables",
             recommendation="Do not expose secrets to MCP servers; use environment variables with caution.",
-            detect_patterns=[".env", "process.env", "AWS_SECRET_ACCESS_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN", "SLACK_BOT_TOKEN"]
+            detect_patterns=[".env", "process.env", "AWS_SECRET_ACCESS_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN", "SLACK_BOT_TOKEN"],
+            target_types=["mcp", "agent_instructions", "container", "env"],
         ),
         Rule(
             code="AGENT004",
@@ -66,7 +80,8 @@ def load_rules() -> List[Rule]:
             severity="high",
             description="MCP server has broad filesystem path access (root or home)",
             recommendation="Restrict path to specific directories.",
-            detect_patterns=["/", "~", "/home", "/Users", "C:\\", ".", "..", "**"]
+            detect_patterns=["\"/\"", "'/'", "\"/home", "'/home", "\"/Users", "'/Users", "\"~", "'~", "path: /", "path: ~", "allow_all_paths", "/home/", "/Users/", "\"/root", "'/root"],
+            target_types=["mcp", "container"],
         ),
         Rule(
             code="AGENT005",
@@ -74,7 +89,8 @@ def load_rules() -> List[Rule]:
             severity="medium",
             description="Agent instruction file contains suspicious prompt injection patterns",
             recommendation="Review and sanitize agent instruction files.",
-            detect_patterns=["ignore previous instructions", "ignore all instructions", "do not tell the user", "secretly", "exfiltrate", "bypass", "disable security", "you are now", "system prompt", "hidden instruction"]
+            detect_patterns=["ignore previous instructions", "ignore all instructions", "do not tell the user", "secretly", "exfiltrate", "bypass", "disable security", "you are now", "system prompt", "hidden instruction"],
+            target_types=["agent_instructions"],
         ),
         Rule(
             code="AGENT006",
@@ -82,7 +98,8 @@ def load_rules() -> List[Rule]:
             severity="high",
             description="Agent instruction references sensitive files or secrets",
             recommendation="Remove references to secrets or use gitignored files.",
-            detect_patterns=[".env", "id_rsa", ".ssh", "credentials", "secrets", "tokens", "auth.json"]
+            detect_patterns=[".env", "id_rsa", ".ssh", "credentials", "secrets", "tokens", "auth.json"],
+            target_types=["agent_instructions", "mcp"],
         ),
         Rule(
             code="AGENT007",
@@ -90,7 +107,8 @@ def load_rules() -> List[Rule]:
             severity="medium",
             description="Agent instruction asks for excessive autonomy (no confirmation)",
             recommendation="Require user confirmation for important actions.",
-            detect_patterns=["do not ask for confirmation", "always run commands", "auto-approve", "never ask user", "full access"]
+            detect_patterns=["do not ask for confirmation", "always run commands", "auto-approve", "never ask user", "full access"],
+            target_types=["agent_instructions"],
         ),
         Rule(
             code="AGENT008",
@@ -98,7 +116,8 @@ def load_rules() -> List[Rule]:
             severity="medium",
             description="MCP server dependency is not pinned (latest tag or no version)",
             recommendation="Pin dependencies to a specific version or commit SHA.",
-            detect_patterns=["latest", ":latest", "@latest"]
+            detect_patterns=["latest", ":latest", "@latest"],
+            target_types=["mcp", "dependency"],
         ),
         Rule(
             code="AGENT009",
@@ -106,7 +125,8 @@ def load_rules() -> List[Rule]:
             severity="high",
             description="Agent config uses remote script install pattern (curl | bash)",
             recommendation="Avoid piping remote scripts directly to shell.",
-            detect_patterns=["curl ... | bash", "wget ... | sh"]
+            detect_patterns=["curl ... | bash", "wget ... | sh"],
+            target_types=["agent_instructions", "mcp", "container"],
         ),
         Rule(
             code="AGENT010",
@@ -114,7 +134,8 @@ def load_rules() -> List[Rule]:
             severity="critical",
             description="MCP server can access the Docker socket",
             recommendation="Avoid mounting the Docker socket unless absolutely necessary.",
-            detect_patterns=["/var/run/docker.sock", "docker.sock"]
+            detect_patterns=["/var/run/docker.sock", "docker.sock"],
+            target_types=["mcp", "container"],
         ),
     ]
     return base_rules + load_additional_rules()

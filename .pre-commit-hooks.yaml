@@ -1,0 +1,7 @@
+- id: agentsec
+  name: AgentSec Static Security Scanner
+  description: Static security scanner for AI coding agents and MCP configurations
+  entry: agentsec scan . --fail-on high
+  language: python
+  types: [text]
+  pass_filenames: false

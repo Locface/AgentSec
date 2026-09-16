@@ -1,32 +1,8 @@
-"""OWASP Top 10 for LLM Applications — rule mapping for AgentSec.
+"""OWASP Top 10 for LLM Applications and OWASP Agentic Security mappings.
 
-Maps each AgentSec rule to the relevant OWASP categories.
-
-OWASP Top 10 for LLM Applications (2025):
-https://genai.owasp.org/
-
-LLM01 — Prompt Injection
-LLM02 — Sensitive Information Disclosure
-LLM03 — Supply Chain Vulnerabilities
-LLM04 — Data Leakage via External Services
-LLM05 — Insecure Output Handling
-LLM06 — Excessive Agency / Unrestricted Autonomy
-LLM07 — Insecure Plugin / Extension Design
-LLM08 — Excessive Permissions / Overprivileged Access
-LLM09 — Over-reliance / Insufficient Oversight
-LLM10 — Model Theft / Intellectual Property Loss
-
-OWASP Agentic Security Top 10 (2025):
-AG01 — Insecure Agent-to-Agent Communication
-AG02 — Unauthorized Tool Access
-AG03 — Agent Impersonation
-AG04 — Task Delegation Abuse
-AG05 — Memory / Prompt Leakage
-AG06 — Inconsistent Authorization
-AG07 — Output Validation Failure
-AG08 — Agent Workflow Manipulation
-AG09 — Inadequate Audit Trail
-AG10 — Privilege Escalation
+Maps AgentSec rules to standard industry frameworks:
+- OWASP Top 10 for LLM Applications (2025): LLM01–LLM10
+- OWASP Agentic Security Top 10 (2025/2026): AG01–AG10
 """
 
 # Mapping: OWASP ID -> (short name, description)
@@ -55,9 +31,8 @@ OWASP_CATEGORIES = {
 }
 
 # Rule-to-OWASP mapping: rule_name -> list of (owasp_id, category_name)
-# Covers all 41 rules from base.py + additional.py (deduplicated)
 RULE_OWASP_MAP = {
-    # === Base rules ===
+    # === Base rules (AGENT001–AGENT010) ===
     "MCP shell execution": [
         ("LLM06", "Excessive Agency"),
         ("AG02", "Unauthorized Tool Access"),
@@ -90,7 +65,7 @@ RULE_OWASP_MAP = {
         ("LLM08", "Excessive Permissions"),
         ("AG02", "Unauthorized Tool Access"),
     ],
-    # === Additional rules ===
+    # === Additional rules (AGENT011–AGENT045) ===
     "Network + filesystem access": [
         ("LLM04", "Data Leakage via External Services"),
         ("AG05", "Memory/Prompt Leakage"),
@@ -187,6 +162,34 @@ RULE_OWASP_MAP = {
     ],
     "Credential helper access": [
         ("LLM02", "Sensitive Information Disclosure"),
+        ("AG02", "Unauthorized Tool Access"),
+    ],
+    "Insecure remote MCP transport": [
+        ("AG01", "Insecure Agent-to-Agent Communication"),
+        ("LLM07", "Insecure Plugin/Extension Design"),
+    ],
+    "Unbounded resource execution": [
+        ("AG04", "Task Delegation Abuse"),
+        ("LLM06", "Excessive Agency"),
+    ],
+    "Unsanitized agent hook execution": [
+        ("AG02", "Unauthorized Tool Access"),
+        ("LLM06", "Excessive Agency"),
+    ],
+    "Prompt and secret leakage in telemetry": [
+        ("LLM02", "Sensitive Information Disclosure"),
+        ("AG05", "Memory/Prompt Leakage"),
+    ],
+    "SSRF vulnerability via agent network tools": [
+        ("LLM04", "Data Leakage via External Services"),
+        ("AG02", "Unauthorized Tool Access"),
+    ],
+    "Runtime instruction hijacking risk": [
+        ("LLM01", "Prompt Injection"),
+        ("AG08", "Agent Workflow Manipulation"),
+    ],
+    "Unsupervised destructive action": [
+        ("LLM08", "Excessive Permissions"),
         ("AG02", "Unauthorized Tool Access"),
     ],
 }

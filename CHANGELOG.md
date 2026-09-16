@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-16
+
+### Added
+- **Rule Scoping Engine:** Contextual targeting by file category (`mcp`, `agent_instructions`, `container`, `env`, `dependency`) reducing false positives on reference MCP packages by >85%.
+- **45 Security Rules (AGENT001–AGENT045):** Added rules covering cleartext remote MCP transports, token bombing / DoS loop bounds, unsanitized hook execution, telemetry prompt leakage, SSRF via metadata endpoints, dynamic prompt hijacking, and unsupervised destructive actions.
+- **Cross-File Capability Aggregation:** Detects dangerous composite permissions across files (e.g. MCP shell execution paired with auto-approve agent directives).
+- **Suppression System (.agentsecignore & inline comments):** Support for global rule suppression, path-scoped rule filters, and inline directive comments (`<!-- agentsec:ignore AGENT001 -->`).
+- **Security Posture Score (0–100 / Grade A–F):** Weighted risk index displayed across terminal and markdown reports.
+- **CI/CD Integrations:** Pre-commit hook (`.pre-commit-hooks.yaml`) and official GitHub Action (`action.yml`).
+- Comprehensive unit test suites for suppression, capabilities, rule scoping, and scoring (total 46 tests).
+
+### Fixed
+- Fixed bug where `.cursorrules`, `.clinerules`, and `.mcp.json` were improperly skipped by default as hidden files.
+- Fixed naive broad path access pattern matching that erroneously triggered on project-relative paths like `dist/index.js`.
+- Fixed documentation discrepancy by synchronizing all rule IDs and descriptions.
+
+
 ### Changed
 - Migrated versioning from manually-edited version strings to
   [`setuptools-scm`](https://setuptools-scm.readthedocs.io/). The Git tag is

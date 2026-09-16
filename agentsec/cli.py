@@ -3,7 +3,6 @@ import sys
 import click
 from pathlib import Path
 
-
 from . import __version__
 
 
@@ -26,38 +25,39 @@ def cli():
               help="Exclude paths matching pattern (can be repeated). E.g., --exclude 'node_modules/**'")
 @click.option("--no-gitignore", is_flag=True, default=False,
               help="Do not automatically respect .gitignore patterns")
+@click.option("--ignore-file", type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+              help="Path to suppression file (defaults to .agentsecignore in scanned root)")
 @click.option("--baseline", type=click.Path(exists=True, dir_okay=False, resolve_path=True),
               help="Path to baseline JSON file (lockfile). Compare findings against it.")
 @click.option("--update-baseline", type=click.Path(dir_okay=False, resolve_path=True),
               help="Save current findings as baseline JSON file and exit.")
 @click.option("--show-owasp", is_flag=True, default=False,
               help="Show OWASP Top 10 for LLM mapping IDs for each finding")
-def scan(path, format, severity, include_hidden, exclude, no_gitignore, fail_on=None, baseline=None, update_baseline=None, show_owasp=False):
+def scan(path, format, severity, include_hidden, exclude, no_gitignore, ignore_file=None, fail_on=None, baseline=None, update_baseline=None, show_owasp=False):
     """Scan a directory for security risks in AI agent configurations."""
-    # Lazy imports: scanner + parsers are only loaded when scan runs,
-    # not when --help is displayed. This keeps `agentsec --help` fast
-    # and prevents import-time failures (e.g. missing tomli on Python 3.10).
     from .scanner import Scanner
     from .report import print_summary
     from .baseline import load_baseline, save_baseline, compare_findings, compute_finding_id
-    from .owasp import format_owasp
 
     if format == "terminal":
         click.echo(f" Scanning {path}...")
 
-    scanner = Scanner(Path(path), include_hidden=include_hidden, min_severity=severity,
-                     exclude_patterns=list(exclude) if exclude else None,
-                     no_gitignore=no_gitignore)
+    scanner = Scanner(
+        Path(path),
+        include_hidden=include_hidden,
+        min_severity=severity,
+        exclude_patterns=list(exclude) if exclude else None,
+        no_gitignore=no_gitignore,
+        ignore_file=Path(ignore_file) if ignore_file else None,
+    )
     findings = scanner.scan()
 
-    # If update-baseline is provided, save baseline and exit
     if update_baseline:
         save_baseline(update_baseline, findings)
         if format == "terminal":
             click.echo(f" Baseline saved to {update_baseline}")
         return
 
-    # Load baseline if provided
     if baseline:
         baseline_findings = load_baseline(baseline)
         new, changed, removed = compare_findings(findings, baseline_findings)
@@ -83,12 +83,10 @@ def scan(path, format, severity, include_hidden, exclude, no_gitignore, fail_on=
         if new or changed:
             sys.exit(1)
     else:
-        # Add OWASP tags to terminal output header if show_owasp
         if format == "terminal" and show_owasp:
             click.echo(" OWASP mapping enabled (LLM = OWASP Top 10 for LLM, AG = OWASP Agentic Security)\n")
         print_summary(findings, format, show_owasp=show_owasp)
 
-    # Existing fail-on logic
     if fail_on:
         severity_levels = {"low": 0, "medium": 1, "high": 2, "critical": 3}
         min_fail = severity_levels.get(fail_on.lower(), -1)

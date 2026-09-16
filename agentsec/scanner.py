@@ -1,27 +1,68 @@
 """Main scanner orchestrator."""
-import pathspec
+
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+import pathspec
+
 from .rules import Rule, load_rules
 from .parsers import parse_file
 from .parsers.json_parser import parse_mcp_config as parse_json_mcp
 from .parsers.yaml_parser import parse_mcp_config as parse_yaml_mcp
 from .parsers.toml_parser import parse_mcp_config as parse_toml_mcp
 from .owasp import get_owasp_ids
+from .ignore import SuppressionManager
+from .capabilities import CapabilityProfile
 
 SEVERITY_ORDER = {"critical": 3, "high": 2, "medium": 1, "low": 0}
 
+ALLOWED_DOTFILES = {".env", ".env.example", ".cursorrules", ".clinerules", ".mcp.json"}
+
+
+def is_broad_path(arg: str) -> bool:
+    """Determine if an argument represents broad root/home filesystem access."""
+    clean = arg.strip().strip("'\"").rstrip("/")
+    if clean in {"/", "~", "/home", "/root", "/users", "c:", "c:\\"} or clean.startswith(("/home/", "/Users/", "/root/")):
+        return True
+    if clean in {"..", ".", "../.."} or "/../" in clean or clean.endswith("/.."):
+        return True
+    return False
+
+
+def classify_file(file_path: Path) -> Optional[str]:
+    """Classify a file into one of the target categories."""
+    name = file_path.name.lower()
+    path_str = str(file_path).replace("\\", "/").lower()
+
+    if name in {"mcp.json", "mcp.yaml", "mcp.yml", "mcp.toml", "mcp-config.json", "claude_desktop_config.json", ".mcp.json"}:
+        return "mcp"
+    if "cline_mcp" in path_str or path_str == "mcp":
+        return "mcp"
+    if name == "settings.json" and ("mcp" in path_str or ".vscode" in path_str or ".cursor" in path_str):
+        return "mcp"
+
+    if name in {"agents.md", "claude.md", ".cursorrules", ".clinerules", "codex.toml", "system.md", "prompt.md"}:
+        return "agent_instructions"
+    if ".cursor/rules" in path_str or name.endswith(".mdc"):
+        return "agent_instructions"
+
+    if name in {".env", ".env.example", ".env.local", ".env.development", ".env.production", ".env.test"} or name.startswith(".env."):
+        return "env"
+
+    if name in {"dockerfile", "docker-compose.yml", "docker-compose.yaml"} or name.startswith("dockerfile."):
+        return "container"
+
+    if name in {"package.json", "requirements.txt", "pipfile"}:
+        return "dependency"
+
+    return None
+
 
 def _load_gitignore_spec(root: Path, extra_patterns: List[str], no_gitignore: bool) -> Optional[pathspec.PathSpec]:
-    """Load .gitignore patterns from root + extra patterns.
-
-    Returns a pathspec.PathSpec with merged patterns, or None if no patterns.
-    """
     patterns: List[str] = []
     if not no_gitignore:
         gitignore_path = root / ".gitignore"
         if gitignore_path.exists():
-            lines = gitignore_path.read_text().splitlines()
+            lines = gitignore_path.read_text(encoding="utf-8", errors="ignore").splitlines()
             for line in lines:
                 stripped = line.strip()
                 if stripped and not stripped.startswith("#"):
@@ -31,20 +72,20 @@ def _load_gitignore_spec(root: Path, extra_patterns: List[str], no_gitignore: bo
 
     if not patterns:
         return None
-    return pathspec.PathSpec.from_lines(
-        "gitignore", patterns
-    )
+    return pathspec.PathSpec.from_lines("gitignore", patterns)
 
 
 class Scanner:
     def __init__(self, root: Path, include_hidden: bool = False, min_severity: str = "all",
-                 exclude_patterns: Optional[List[str]] = None, no_gitignore: bool = False):
+                 exclude_patterns: Optional[List[str]] = None, no_gitignore: bool = False,
+                 ignore_file: Optional[Path] = None):
         self.root = root
         self.include_hidden = include_hidden
         self.min_severity = min_severity
         self.exclude_patterns = exclude_patterns or []
         self.no_gitignore = no_gitignore
         self._ignore_spec = _load_gitignore_spec(root, self.exclude_patterns, no_gitignore)
+        self.suppression = SuppressionManager(root, ignore_file=ignore_file)
         self.rules = load_rules()
 
     def _finding_meets_severity_threshold(self, finding: Dict[str, Any]) -> bool:
@@ -55,45 +96,49 @@ class Scanner:
         return finding_level >= min_level
 
     def scan(self) -> List[Dict[str, Any]]:
-        """Walk the directory, parse relevant files, and apply rules."""
         findings = []
-        target_patterns = [
-            "mcp.json", "mcp.yaml", "mcp.yml", "mcp.toml",
-            "mcp-config.json", "claude_desktop_config.json", "settings.json",
-            "AGENTS.md", "CLAUDE.md", ".cursorrules", ".cursor/rules",
-            ".cursor", "cline_mcp", ".clinerules", "codex.toml",
-            ".env", ".env.example",
-            "docker-compose.yml", "Dockerfile",
-            "package.json", "requirements.txt"
-        ]
-        mcp_patterns = [
-            "mcp.json", "mcp.yaml", "mcp.yml", "mcp.toml",
-            "mcp-config.json", "claude_desktop_config.json", "settings.json", "cline_mcp"
-        ]
-        
+        cap_profile = CapabilityProfile()
+
         for file_path in self.root.rglob("*"):
             if not file_path.is_file():
                 continue
-            if not self.include_hidden and file_path.name.startswith(".") and file_path.name not in [".env", ".env.example"]:
+
+            # Allow recognized dotfiles (.cursorrules, .clinerules, .env, .mcp.json, etc.)
+            is_recognized_dotfile = (
+                file_path.name in ALLOWED_DOTFILES
+                or file_path.name.startswith(".env.")
+                or ".cursor/rules" in str(file_path).replace("\\", "/")
+            )
+            if not self.include_hidden and file_path.name.startswith(".") and not is_recognized_dotfile:
                 continue
 
             # Check .gitignore and --exclude patterns
+            rel_path = ""
             if self._ignore_spec is not None:
                 try:
-                    rel = file_path.relative_to(self.root).as_posix()
-                    if self._ignore_spec.match_file(rel):
+                    rel_path = file_path.relative_to(self.root).as_posix()
+                    if self._ignore_spec.match_file(rel_path):
                         continue
                 except ValueError:
-                    pass  # file outside root — should not happen, but be safe
+                    pass
+            else:
+                try:
+                    rel_path = file_path.relative_to(self.root).as_posix()
+                except ValueError:
+                    rel_path = str(file_path)
 
-            if not any(p in str(file_path) for p in target_patterns):
+            file_type = classify_file(file_path)
+            if not file_type:
                 continue
 
             content = parse_file(file_path)
             if content is None:
                 continue
 
-            if any(mcp_pattern in str(file_path) for mcp_pattern in mcp_patterns):
+            if file_type == "agent_instructions":
+                cap_profile.add_agent_instruction_content(content)
+
+            if file_type == "mcp":
                 mcp_data = None
                 if file_path.suffix == ".json":
                     mcp_data = parse_json_mcp(content, file_path)
@@ -101,24 +146,38 @@ class Scanner:
                     mcp_data = parse_yaml_mcp(content, file_path)
                 elif file_path.suffix == ".toml":
                     mcp_data = parse_toml_mcp(content, file_path)
+
                 if mcp_data:
                     for server in mcp_data:
+                        cap_profile.add_mcp_server(server)
                         for rule in self.rules:
+                            if not rule.applies_to("mcp"):
+                                continue
                             if self._apply_rule_to_mcp_server(rule, server):
                                 finding = self._make_finding(file_path, rule, server)
                                 if self._finding_meets_severity_threshold(finding):
-                                    findings.append(finding)
+                                    if not self.suppression.is_ignored(finding, rel_path, content):
+                                        findings.append(finding)
             else:
                 for rule in self.rules:
-                    if rule.detect(content, file_path):
+                    if not rule.applies_to(file_type):
+                        continue
+                    if rule.detect(content, file_path, file_type=file_type):
                         finding = self._make_finding(file_path, rule)
                         if self._finding_meets_severity_threshold(finding):
-                            findings.append(finding)
+                            if not self.suppression.is_ignored(finding, rel_path, content):
+                                findings.append(finding)
+
+        # Cross-file composite risk analysis
+        cross_findings = cap_profile.check_cross_file_risks()
+        for cf in cross_findings:
+            if self._finding_meets_severity_threshold(cf):
+                if not self.suppression.is_ignored(cf, cf["file"]):
+                    findings.append(cf)
 
         return findings
 
     def _make_finding(self, file_path: Path, rule: Rule, server: Dict[str, Any] | None = None) -> Dict[str, Any]:
-        """Build a finding dict with OWASP info."""
         finding = {
             "file": str(file_path),
             "rule": rule.name,
@@ -133,40 +192,31 @@ class Scanner:
         return finding
 
     def _apply_rule_to_mcp_server(self, rule: Rule, server: Dict[str, Any]) -> bool:
-        """Apply a rule to a structured MCP server entry."""
+        command = server.get("command", "").lower()
+        args_list = [str(a) for a in server.get("args", [])]
+        args = " ".join(args_list).lower()
+
         if rule.name == "MCP shell execution":
-            command = server.get("command", "").lower()
-            args = " ".join(server.get("args", [])).lower()
             shell_indicators = ["bash", "sh", "powershell", "cmd", "zsh", "fish"]
-            if any(ind in command or ind in args for ind in shell_indicators):
-                return True
-            return False
+            return any(ind == command or f"/{ind}" in command or ind in args for ind in shell_indicators)
 
         if rule.name == "MCP filesystem write access":
-            args = " ".join(server.get("args", [])).lower()
-            if server.get("command", "") == "npx" and "@modelcontextprotocol/server-filesystem" in args:
+            if command == "npx" and "@modelcontextprotocol/server-filesystem" in args:
                 return True
             write_indicators = ["write", "edit", "delete", "rm", "mv"]
-            if any(ind in args for ind in write_indicators):
-                return True
-            return False
+            return any(ind in args for ind in write_indicators)
 
         if rule.name == "Secret exposure":
-            args = " ".join(server.get("args", [])).lower()
-            secret_patterns = [".env", "process.env", "aws_secret", "openai_api", "anthropic_api", "github_token", "slack_token"]
-            if any(p in args for p in secret_patterns):
-                return True
-            return False
+            env_str = str(server.get("env", {})).lower()
+            secret_patterns = [".env", "process.env", "aws_secret", "openai_api", "anthropic_api", "github_token", "slack_token", "api_key"]
+            return any(p in args or p in env_str for p in secret_patterns)
 
         if rule.name == "Broad path access":
-            args = " ".join(server.get("args", [])).lower()
-            if "/" in args or ".." in args or "~" in args:
-                return True
-            return False
+            return any(is_broad_path(arg) for arg in args_list)
 
         if rule.name == "Claude Desktop config with MCP server risks":
             server_text = str(server).lower()
             risky_indicators = ["filesystem", "shell", "bash", "network", "http", "https", "curl", "wget"]
             return any(indicator in server_text for indicator in risky_indicators)
 
-        return rule.detect(str(server), Path("mcp"))
+        return rule.detect(str(server), Path("mcp"), file_type="mcp")

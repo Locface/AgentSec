@@ -50,7 +50,7 @@ def classify_file(file_path: Path) -> Optional[str]:
     if name in {".env", ".env.example", ".env.local", ".env.development", ".env.production", ".env.test"} or name.startswith(".env."):
         return "env"
 
-    if name in {"dockerfile", "docker-compose.yml", "docker-compose.yaml"} or name.startswith("dockerfile."):
+    if name in {"dockerfile", "docker-compose.yml", "docker-compose.yaml", "devcontainer.json"} or name.startswith("dockerfile.") or "devcontainer" in path_str:
         return "container"
 
     if name in {"package.json", "requirements.txt", "pipfile"}:

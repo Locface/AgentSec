@@ -213,6 +213,34 @@ RULE_OWASP_MAP = {
         ("AG03", "Agent Impersonation"),
         ("AG08", "Agent Workflow Manipulation"),
     ],
+    "Docker socket mount in agent container": [
+        ("LLM08", "Excessive Permissions"),
+        ("AG10", "Privilege Escalation"),
+    ],
+    "Privileged container execution": [
+        ("LLM08", "Excessive Permissions"),
+        ("AG10", "Privilege Escalation"),
+    ],
+    "Insecure browser sandbox flags in MCP": [
+        ("LLM07", "Insecure Plugin/Extension Design"),
+        ("AG02", "Unauthorized Tool Access"),
+    ],
+    "Exposed browser remote debugging port": [
+        ("LLM06", "Excessive Agency"),
+        ("AG02", "Unauthorized Tool Access"),
+    ],
+    "CI/CD workflow modification directive": [
+        ("LLM06", "Excessive Agency"),
+        ("AG08", "Agent Workflow Manipulation"),
+    ],
+    "Git hook tampering directive": [
+        ("LLM06", "Excessive Agency"),
+        ("AG10", "Privilege Escalation"),
+    ],
+    "Plaintext vector DB / memory store credentials": [
+        ("LLM02", "Sensitive Information Disclosure"),
+        ("AG05", "Memory/Prompt Leakage"),
+    ],
 }
 
 RULE_CODE_MAP = {
@@ -266,6 +294,13 @@ RULE_CODE_MAP = {
     "AGENT048": "Insecure deserialization in tool handler",
     "AGENT049": "Hardcoded cloud metadata SSRF in agent tool",
     "AGENT050": "Tool shadowing & naming collision",
+    "AGENT051": "Docker socket mount in agent container",
+    "AGENT052": "Privileged container execution",
+    "AGENT053": "Insecure browser sandbox flags in MCP",
+    "AGENT054": "Exposed browser remote debugging port",
+    "AGENT055": "CI/CD workflow modification directive",
+    "AGENT056": "Git hook tampering directive",
+    "AGENT057": "Plaintext vector DB / memory store credentials",
 }
 
 

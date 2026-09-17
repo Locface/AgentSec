@@ -102,6 +102,77 @@ if any(m in target_url for m in ["169.254.169.254", "metadata.google.internal"])
 // After (Namespaced tool):
 "tools": ["server_name__read_file"]""",
     },
+    "AGENT051": {
+        "title": "Remove Docker Socket Volume Mount",
+        "action": "Remove '/var/run/docker.sock' mount from container arguments or compose configuration.",
+        "patch": """// Before:
+volumes:
+  - "/var/run/docker.sock:/var/run/docker.sock"
+
+// After:
+# Do not mount host Docker socket inside agent environment
+volumes:
+  - "./workspace:/workspace" """,
+    },
+    "AGENT052": {
+        "title": "Disable Privileged Container Mode",
+        "action": "Set privileged: false and drop CAP_SYS_ADMIN capabilities.",
+        "patch": """// Before:
+privileged: true
+
+// After:
+privileged: false
+cap_drop:
+  - ALL""",
+    },
+    "AGENT053": {
+        "title": "Enable Chromium Sandbox and Web Security",
+        "action": "Remove '--no-sandbox' and '--disable-web-security' from MCP browser launch arguments.",
+        "patch": """// Before:
+"args": ["--no-sandbox", "--disable-web-security"]
+
+// After:
+"args": ["--headless=new", "--disable-gpu"]""",
+    },
+    "AGENT054": {
+        "title": "Disable Remote Debugging Port",
+        "action": "Remove '--remote-debugging-port' to prevent unauthorized browser takeover.",
+        "patch": """// Before:
+"args": ["--remote-debugging-port=9222"]
+
+// After:
+# Use stdin/stdout MCP communication instead of opening debug ports
+"args": ["--headless=new"]""",
+    },
+    "AGENT055": {
+        "title": "Protect CI/CD Workflows from Agent Modification",
+        "action": "Add '.github/workflows/**' to .agentsecignore or repository branch protection rules.",
+        "patch": """// Before (prompt allowing workflow edits):
+You may edit and update .github/workflows to fix CI.
+
+// After:
+Never modify .github/workflows/ or CI configuration files.
+All CI/CD modifications require manual human authoring.""",
+    },
+    "AGENT056": {
+        "title": "Forbid Agent Modifications to Git Hooks",
+        "action": "Block tool access to the '.git/' directory and hooks.",
+        "patch": """// Before:
+Configure pre-commit by writing executable script to .git/hooks/pre-commit.
+
+// After:
+Configure pre-commit using standard .pre-commit-config.yaml.
+Do not touch internal files in .git/hooks/.""",
+    },
+    "AGENT057": {
+        "title": "Extract Vector DB Credentials to Environment",
+        "action": "Replace hardcoded API keys and passwords with dynamic environment references.",
+        "patch": """// Before:
+"qdrant_api_key": "th1s-1s-4-s3cr3t-k3y"
+
+// After:
+"qdrant_api_key": "${QDRANT_API_KEY}" """,
+    },
 }
 
 

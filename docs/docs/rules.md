@@ -1,6 +1,6 @@
 # Security Rules Reference
 
-AgentSec ships with **50 security rules (AGENT001–AGENT045)** covering the full spectrum of AI agent risks, MCP configuration vulnerabilities, and autonomous execution hazards.
+AgentSec ships with **57 security rules (AGENT001–AGENT057)** covering the full spectrum of AI agent risks, MCP configuration vulnerabilities, and autonomous execution hazards.
 
 All rules map to the **OWASP Top 10 for LLM Applications (2025)** (LLM01–LLM10) and the **OWASP Agentic Security Top 10 (2026)** (AG01–AG10).
 
@@ -71,11 +71,13 @@ All rules map to the **OWASP Top 10 for LLM Applications (2025)** (LLM01–LLM10
 | **AGENT048** | Insecure deserialization in tool handler | High | Python Tool | LLM08, AG07 | Tool uses unsafe deserialization (`pickle.loads`, `yaml.load` without SafeLoader) |
 | **AGENT049** | Hardcoded cloud metadata SSRF in agent tool | Critical | Python Tool | LLM04, AG05 | Agent tool code directly references cloud IMDS (`169.254.169.254`) |
 | **AGENT050** | Tool shadowing & naming collision | High | MCP | AG03, AG08 | Multiple MCP servers define colliding tool names, creating a tool hijacking hazard |
-| **AGENT046** | Arbitrary code execution in tool handler | Critical | Python Tool | LLM06, AG02 | Agent tool or skill code invokes , , or  |
-| **AGENT047** | Unsanitized shell invocation in tool code | Critical | Python Tool | LLM06, AG02 | Tool implementation invokes shell commands via  or  |
-| **AGENT048** | Insecure deserialization in tool handler | High | Python Tool | LLM08, AG07 | Tool uses unsafe deserialization (,  without SafeLoader) |
-| **AGENT049** | Hardcoded cloud metadata SSRF in agent tool | Critical | Python Tool | LLM04, AG05 | Agent tool code directly references cloud IMDS () |
-| **AGENT050** | Tool shadowing & naming collision | High | MCP | AG03, AG08 | Multiple MCP servers define colliding tool names, creating a tool hijacking hazard |
+| **AGENT051** | Docker socket mount in agent container | Critical | Container, MCP | LLM08, AG10 | Agent container mounts host Docker socket (`/var/run/docker.sock`), allowing host root escape |
+| **AGENT052** | Privileged container execution | Critical | Container, MCP | LLM08, AG10 | Agent container runs with `privileged: true` or `CAP_SYS_ADMIN`, disabling container boundaries |
+| **AGENT053** | Insecure browser sandbox flags in MCP | High | MCP, Container | LLM07, AG02 | Browser tool runs with `--no-sandbox` or `--disable-web-security` flags |
+| **AGENT054** | Exposed browser remote debugging port | Critical | MCP, Container | LLM06, AG02 | Browser automation tool opens Chrome DevTools Protocol port (`--remote-debugging-port`) |
+| **AGENT055** | CI/CD workflow modification directive | Critical | Instructions, MCP | LLM06, AG08 | Prompt or tool config allows agent write access to `.github/workflows/` or `.gitlab-ci.yml` |
+| **AGENT056** | Git hook tampering directive | High | Instructions, MCP | LLM06, AG10 | Prompt or tool config permits writing executable hooks into `.git/hooks/` |
+| **AGENT057** | Plaintext vector DB credentials | High | Instructions, MCP, Container | LLM02, AG05 | Hardcoded plaintext connection strings or API keys for Qdrant, Pinecone, Chroma, Weaviate, Redis |
 
 ---
 
